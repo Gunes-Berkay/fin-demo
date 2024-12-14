@@ -1,23 +1,28 @@
 import logo from './logo.svg';
 import './App.css';
+import { Routes } from 'react-router-dom';
+import Charts from './components/Charts'
+import MainPage from './components/MainPage'
+import NewsPage from './components/NewsPage'
+import Wallet from './components/Wallet'
+import Navbar from './components/Navbar'
+import { Router, Route } from 'react-router-dom';
 
 function App() {
+  const myWidth = 220
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className='App'>
+      <Navbar drawerWidth={myWidth}
+       content={<Routes>
+        <Route path='' element={<MainPage/>}></Route>
+        <Route path='/wallet' element={<Wallet/>}></Route>
+        <Route path='/charts' element={<Charts/>}></Route>
+        <Route path='/news' element={<NewsPage/>}></Route>
+      </Routes>}
+       />
+
+      
+      
     </div>
   );
 }
