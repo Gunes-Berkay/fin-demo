@@ -32,34 +32,6 @@ class AddPaperToPortfolioView(APIView):
         serializer = PortfolioPaperSerializer(portfolio_paper)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-# class createPortfolio(APIView):
-#     def post(self, request):
-#         portfolio_name = request.data.get('name')
-#         papers_data = request.data.get('papers', [])  # Gelen istekten papers listesi alınır (varsayılan boş liste)
-
-#         # Yeni bir Portfolio oluşturulur
-#         portfolio = Portfolio.objects.create(
-#             name=portfolio_name
-#         )
-
-#         # Papers (hisseler) portföye eklenir
-#         for paper_id in papers_data:
-#             try:
-#                 paper = Paper.objects.get(id=paper_id)  # Her bir paper_id için Paper modelinden obje alınır
-#                 portfolio.papers_list.add(paper)  # Portfolio'nun papers_list alanına eklenir
-#             except Paper.DoesNotExist:
-#                 return Response(
-#                     {"error": f"Paper with ID {paper_id} not found."},
-#                     status=status.HTTP_404_NOT_FOUND
-#                 )
-
-#         # Son olarak portföyün serializer'ı hazırlanır ve cevap döndürülür
-#         serializer = PortfolioSerializer(portfolio)
-#         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-
-
 class createPortfolio(APIView):
     def post(self, request):
         portfolio_name = request.data.get('name')

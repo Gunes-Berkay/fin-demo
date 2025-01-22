@@ -6,12 +6,23 @@ from ta.trend import ADXIndicator
 from tradingview_ta import TA_Handler,Exchange
 from tradingview_ta import Interval as tvtaInterval
 import sqlite3, os
+import numpy as np
+from add import coins_dict, symbol_name_dict
+
 
 tv = TvDatafeed()
+
+
+def update(SYMBOL, EXCHANGE):
+    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=Interval.in_4_hour, n_bars=28)
+    data = add_indicators(data)
+    return data
+
 
 def get_data(SYMBOL, EXCHANGE):
     data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=Interval.in_4_hour, n_bars=500)
     return add_indicators(data)
+
 
 def add_indicators(data):
     data['rsi_14'] = ta.momentum.RSIIndicator(data['close'], window=14).rsi()
@@ -48,6 +59,7 @@ def add_indicators(data):
     data['v_macd_signal'] = data['v_macd'].ewm(span=9, adjust=False).mean()
 
     data = data.reset_index(drop=False)
+
     return add_divergences(data)
 
 def add_divergences(data):
@@ -725,11 +737,8 @@ def create_table(table_name, cursor: sqlite3.Cursor):
     """
     cursor.execute(query)
 
-def saveToDatabase(data_dict: dict, names_dict:dict):
-    import os
-    import sqlite3
-    import pandas as pd
-    import numpy as np
+def saveToDatabase(symbol_dict: dict, names_dict:dict):
+    
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, "papers.sqlite3")
@@ -737,7 +746,7 @@ def saveToDatabase(data_dict: dict, names_dict:dict):
     cursor = conn.cursor()
 
     
-    for symbol, exchange in data_dict.items():
+    for symbol, exchange in symbol_dict.items():
         try:
             
             data = get_data(symbol, exchange)
@@ -826,6 +835,112 @@ def saveToDatabase(data_dict: dict, names_dict:dict):
                         conn.commit() 
                     except Exception as e:
                         print(f"Veri eklenirken hata oluştu: {e}")
+
+                 
+            else:
+                print(f"Symbol {symbol} için veri alınamadı.")
+        except Exception as e:
+            print(f"Veri alınırken hata oluştu: {e}")
+
+    conn.close()
+
+def updateDatabase(symbol_dict: dict, names_dict:dict):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(BASE_DIR, "papers.sqlite3")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    
+    for symbol, exchange in symbol_dict.items():
+        try:         
+            data = update(symbol, exchange)
+            if data is not None:  
+                data['symbol'] = symbol
+                name = names_dict.get(symbol)
+
+
+                data = data.astype({
+                'datetime': 'str',
+                'open': 'float',
+                'high': 'float',
+                'low': 'float',
+                'close': 'float',
+                'volume': 'float',
+                'rsi_14': 'float',
+                'macd': 'float',
+                'macd_signal': 'float',
+                'stoch_k': 'float',
+                'stoch_d': 'float',
+                'cmf': 'float',
+                'cci': 'float',
+                'mfi': 'float',
+                'obv': 'float',
+                'dmi_positive': 'float',
+                'dmi_negative': 'float',
+                'adx': 'float',
+                'v_macd': 'float',
+                'v_macd_signal': 'float',
+                # Divergence sütunları
+                'Bearish_RSI_Divergence': 'bool',
+                'Bear_Divergence_CMF': 'bool',
+                'Bear_Divergence_MACD': 'bool',
+                'Bear_Divergence_CCI': 'bool',
+                'Bear_Divergence_MFI': 'bool',
+                'Bear_Divergence_OBV': 'bool',
+                'Bear_DIOSC_Divergence': 'bool',
+                'Bear_VMACD_Divergence': 'bool',
+                'Bull_Divergence': 'bool',
+                'Bull_CMF_Divergence': 'bool',
+                'Bull_MACD_Divergence': 'bool',
+                'Bull_CCI_Divergence': 'bool',
+                'Bull_MFI_Divergence': 'bool',
+                'Bull_OBV_Divergence': 'bool',
+                'Bull_DIOSC_Divergence': 'bool',
+                'Bull_VMACD_Divergence': 'bool',
+                'Hidden_Bear_RSI_Divergence': 'bool',
+                'Hidden_Bear_MFI_Divergence': 'bool',
+                'Hidden_Bear_MACD_Divergence': 'bool',
+                'Hidden_Bear_CCI_Divergence': 'bool',
+                'Hidden_Bear_OBV_Divergence': 'bool',
+                'Hidden_Bear_VMACD_Divergence': 'bool',
+                'Hidden_Bull_RSI_Divergence': 'bool',
+                'Hidden_Bull_MFI_Divergence': 'bool',
+                'Hidden_Bull_MACD_Divergence': 'bool',
+                'Hidden_Bull_CCI_Divergence': 'bool',
+                'Hidden_Bull_OBV_Divergence': 'bool',
+                'Hidden_Bull_VMACD_Divergence': 'bool',
+                'Bearish_Total': 'int',
+                'Bull_Total': 'int',
+                'Hidden_Bear_Total': 'int',
+                'Hidden_Bull_Total': 'int',
+            })
+
+                last_row_df = data.tail(1)  
+
+                last_row_datetime = last_row_df['datetime'].iloc[0]
+
+                cursor.execute(f"""
+                    SELECT COUNT(*) FROM {name}
+                    WHERE datetime = ?
+                """, (last_row_datetime,))
+
+                
+                if cursor.fetchone()[0] == 0:
+                    
+                    row_data = tuple(last_row_df.iloc[0])
+
+                    
+                    cursor.execute(f"""
+                        INSERT INTO {name} ({', '.join(last_row_df.columns)})
+                        VALUES ({', '.join(['?'] * len(last_row_df.columns))})
+                    """, row_data)
+
+                    
+                    conn.commit()
+                    print("Yeni veri eklendi.")
+                else:
+                    print(f"Veri zaten mevcut: {last_row_datetime}")
+
 
                  
             else:

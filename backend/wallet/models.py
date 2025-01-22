@@ -17,7 +17,7 @@ class Paper(models.Model):
     name = models.CharField(max_length=100)
 
     class Meta:
-        db_table = 'wallet_paper'  # Belirli tablo ismini burada tanımlayın
+        db_table = 'wallet_paper'  
 
     def __str__(self):
         return self.name
@@ -28,10 +28,7 @@ class PortfolioPaper(models.Model):
     portfolio_paper_id = models.AutoField(primary_key=True)
     paper = models.ForeignKey(Paper, on_delete=models.CASCADE)
     portfolio = models.ForeignKey(Portfolio, on_delete=models.CASCADE)
-    #entry_price = models.DecimalField(max_digits=10, decimal_places=2)
-    # cur_price = models.DecimalField(max_digits=10, decimal_places=2)
-    #number = models.DecimalField(max_digits=10, decimal_places=2)
-    # entry_date = models.DateField()
+    
 
     class Meta:
         db_table = 'wallet_portfolio_paper'
