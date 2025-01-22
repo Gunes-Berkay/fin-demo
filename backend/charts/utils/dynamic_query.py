@@ -1,12 +1,4 @@
-
-from django.http import JsonResponse
 from django.db import connections
-
-
-def fetch_table_data(request, table_name):
-    data = get_table_data(table_name, limit=50)  # Fetch 50 rows
-    return JsonResponse({'table_data': data})
-
 
 def get_table_data(table_name, limit=100):
     """

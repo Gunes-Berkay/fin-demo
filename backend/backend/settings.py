@@ -86,9 +86,17 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'NAME': BASE_DIR / 'db.sqlite3',  # Default database
+    },
+    'papers_db': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'charts' / 'trading' / 'papers.sqlite3',  # Papers database
+    },
+    
 }
+
+DATABASE_ROUTERS = ['path.to.db_router.PapersDBRouter']
+
 
 
 # Password validation
