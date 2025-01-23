@@ -1,7 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 import { Routes } from 'react-router-dom';
-import Charts from './components/Charts'
+
 import MainPage from './components/MainPage'
 import NewsPage from './components/NewsPage'
 import Wallet from './components/Wallet'
@@ -16,15 +16,14 @@ function App() {
        content={<Routes>
         <Route path='' element={<MainPage/>}></Route>
         <Route path='/wallet' element={<Wallet/>}></Route>
-        <Route path='/charts' element={<Charts/>}></Route>
+        
         <Route path='/news' element={<NewsPage/>}></Route>
       </Routes>}
        />
 
-      
-      
+
+
     </div>
   );
 }
-
 export default App;
