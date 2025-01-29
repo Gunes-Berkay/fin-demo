@@ -6,7 +6,6 @@ import axios from "axios";
 
 
 
-
 const Wallet = () => {
   const [portfolios, setPortfolios] = useState([]);
   const [showModal, setShowModal] = useState(false);

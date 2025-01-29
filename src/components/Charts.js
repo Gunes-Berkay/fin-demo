@@ -1,92 +1,79 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import {
-  ChartCanvas,
-  Chart,
-  series,
-  axes,
-  helper,
-  scale,
-} from "react-financial-charts";
+// TradingViewWidget.jsx
+import React, { useEffect, useRef, memo, useState } from 'react';
 
-const { CandlestickSeries } = series;
-const { XAxis, YAxis } = axes;
-const { discontinuousTimeScaleProvider } = scale;
-const { fitWidth } = helper;
 
-const CandlestickChart = (props) => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+function TradingViewWidget() {
+  const container = useRef();
+  let isScriptAdded = useRef(false);
+  const exchanges = ["BINANCE", "OKX", "BIST"];
+  const [watchList, setWatchList] = useState([]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await axios.get(
-        "http://127.0.0.1:8000/charts/table/Bitcoin/" // Replace with your endpoint
-      );
-      // Map the data to the format required for candlestick charts
-      const chartData = response.data.map((item) => ({
-        date: new Date(item.datetime),
-        open: item.open,
-        high: item.high,
-        low: item.low,
-        close: item.close,
-        volume: item.volume,
-      }));
-      setData(chartData);
-    } catch (err) {
-      setError("Failed to load data.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-
-  const xScaleProvider = discontinuousTimeScaleProvider.inputDateAccessor(
-    (d) => d.date
-  );
-  const { data: chartData, xScale, xAccessor, displayXAccessor } =
-    xScaleProvider(data);
-
-  const xExtents = [
-    xAccessor(chartData[0]),
-    xAccessor(chartData[chartData.length - 1]),
+  const coins = [
+    "BINANCE:BTCUSDT", "BINANCE:ETHUSDT", "BINANCE:XRPUSDT", "BINANCE:SOLUSDT", "BINANCE:BNBUSDT", "BINANCE:DOGEUSDT", 
+    "BINANCE:ADAUSDT", "BINANCE:TRXUSDT", "BINANCE:LINKUSDT", "BINANCE:AVAXUSDT", "BINANCE:XLMUSDT", "BINANCE:TONUSDT", 
+    "BINANCE:HBARUSDT", "BINANCE:SUIUSDT", "BINANCE:SHIBUSDT", "BINANCE:DOTUSDT", "BINANCE:LEOUSDT", "BINANCE:LTCUSDT", 
+    "BINANCE:BGBUSDT", "BINANCE:BCHUSDT", "BINANCE:HYPEUSDT", "BINANCE:UNIUSDT", "BINANCE:USDeUSDT", "BINANCE:TRUMPUSDT", 
+    "BINANCE:DAIUSDT", "BINANCE:PEPEUSDT", "BINANCE:NEARUSDT", "BINANCE:AAVEUSDT", "BINANCE:ONDOUSDT", "BINANCE:OMUSDT", 
+    "BINANCE:APTUSDT", "BINANCE:ICPUSDT", "BINANCE:XMRUSDT", "BINANCE:TAOUSDT", "BINANCE:ETCUSDT", "BINANCE:MNTUSDT", 
+    "BINANCE:VETUSDT", "BINANCE:CROUSDT", "BINANCE:POLUSDT", "BINANCE:OKBUSDT", "BINANCE:KASUSDT", "BINANCE:ALGOUSDT", 
+    "BINANCE:RENDERUSDT", "BINANCE:FILUSDT", "BINANCE:ARBUSDT", "BINANCE:FETUSDT", "BINANCE:ATOMUSDT", "BINANCE:GTUSDT"
   ];
+  
+  //const [watchList, setWatchList] = useState([]);
+  //const [indicators, setIndicators] = useState([]);
+
+  //const new_coin_list = coin_list.map((coin)=>)
+    const coin = "BINANCE:XAIUSDT";
+
+ 
+  
+
+
+
+    useEffect(
+      () => {
+        const script = document.createElement("script");
+        script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+        script.type = "text/javascript";
+        script.async = true;
+        script.innerHTML = JSON.stringify({
+          width: "1980",
+          height: "810",
+          symbol: "BINANCE:BTCUSDT",
+          interval: "240",
+          timezone: "Europe/Istanbul",
+          theme: "dark",
+          style: "1",
+          locale: "tr",
+          withdateranges: true,
+          hide_side_toolbar: false,
+          allow_symbol_change: true,
+          watchlist: coins,
+          details: true,
+          hotlist: true,
+          calendar: false,
+          studies: [
+            "STD;24h%Volume",
+            "STD;2030"
+          ],
+          support_host: "https://www.tradingview.com"
+        });
+        
+        container.current.appendChild(script);
+      },
+      []
+    );
 
   return (
-    <div>
-      <h1>Candlestick Chart</h1>
-      {data.length > 0 && (
-        <ChartCanvas
-          height={400}
-          width={props.width}
-          ratio={3}
-          margin={{ left: 50, right: 50, top: 10, bottom: 30 }}
-          type={"svg"}
-          seriesName="Candlestick"
-          data={chartData}
-          xScale={xScale}
-          xAccessor={xAccessor}
-          displayXAccessor={displayXAccessor}
-          xExtents={xExtents}
-        >
-          <Chart id={1} yExtents={(d) => [d.high, d.low]}>
-            <XAxis />
-            <YAxis />
-            <CandlestickSeries />
-          </Chart>
-        </ChartCanvas>
-      )}
+    <div className="tradingview-widget-container" ref={container} >
+      <div>
+        <button id='add_to_watchlist'></button>
+      </div>
+      <div className="tradingview-widget-container__widget" ></div>
+      
     </div>
   );
-};
+}
 
-export default fitWidth(CandlestickChart);
+export default memo(TradingViewWidget);

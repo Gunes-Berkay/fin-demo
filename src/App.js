@@ -6,6 +6,7 @@ import MainPage from './components/MainPage'
 import NewsPage from './components/NewsPage'
 import Wallet from './components/Wallet'
 import Navbar from './components/Navbar'
+import Charts from './components/Charts'
 import { Router, Route } from 'react-router-dom';
 
 function App() {
@@ -16,7 +17,7 @@ function App() {
        content={<Routes>
         <Route path='' element={<MainPage/>}></Route>
         <Route path='/wallet' element={<Wallet/>}></Route>
-        
+        <Route path='/charts' element={<Charts/>}></Route>
         <Route path='/news' element={<NewsPage/>}></Route>
       </Routes>}
        />
