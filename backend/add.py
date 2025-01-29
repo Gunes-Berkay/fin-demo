@@ -2,6 +2,7 @@ import sqlite3
 import requests
 import os
 import trading
+import pandas as pd
 
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,7 @@ def fetch_top_100_coins():
     }
     params = {
         "start": "1",
-        "limit": "5",
+        "limit": "50",
         "convert": "USD",
     }
     response = requests.get(API_URL, headers=headers, params=params)
@@ -29,6 +30,8 @@ def fetch_top_100_coins():
     
     coins_dict = {coin['symbol']+'USDT': "BINANCE" for coin in data['data']}
     symbol_name_dict = {coin['symbol']+'USDT':coin['name'] for coin in data['data']}
+    # df = pd.DataFrame(list(coins_dict.items()), columns=["Symbol", "Exchange"])
+    # df.to_csv("top_100_coins.csv", index=False)
 
     return coins_dict, symbol_name_dict
 
@@ -38,7 +41,7 @@ def insert_coins_into_db():
     trading.saveToDatabase(coins_dict, symbol_name_dict)
     
 
-
+fetch_top_100_coins()
 if __name__ == "__main__":
     print()
     insert_coins_into_db()

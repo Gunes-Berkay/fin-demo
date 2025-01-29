@@ -8,19 +8,57 @@ from tradingview_ta import Interval as tvtaInterval
 import sqlite3, os
 import numpy as np
 from add import coins_dict, symbol_name_dict
+from datetime import datetime, timedelta
 
 
 tv = TvDatafeed()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(BASE_DIR, "papers.sqlite3")
+conn = sqlite3.connect(db_path)
 
+interval_dict = {
+    '1m' : Interval.in_1_minute,
+    '5m' : Interval.in_5_minute,
+    '15m': Interval.in_15_minute,
+    '30m': Interval.in_30_minute,
+    '1h' : Interval.in_1_hour,
+    '4h' : Interval.in_4_hour,
+    '1d' : Interval.in_daily,
+    '1w' : Interval.in_weekly,
+    '1mo': Interval.in_monthly
+}
+interval_mapping = {
+    "1h": 60,
+    "4h": 240,
+    "1d": 1440
+}
 
-def update(SYMBOL, EXCHANGE):
-    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=Interval.in_4_hour, n_bars=28)
+def update(SYMBOL, EXCHANGE, INTERVAL, BAR_COUNT):
+    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=interval_dict.get(INTERVAL), n_bars=BAR_COUNT+28)
     data = add_indicators(data)
     return data
 
+def calculate_bar_count_for_paper(PAPER_NAME , INTERVAL):
+    current_data = tv.get_hist(symbol='BTCUSDT', exchange='BINANCE', interval=interval_dict.get(INTERVAL),n_bars=1)
+    current_data = current_data.reset_index()
+    current_datetime = str(current_data['datetime'].iloc[-1])
+    cursor = conn.cursor()
+    cursor.execute(f'SELECT * FROM {PAPER_NAME}on{INTERVAL} ORDER BY rowid DESC LIMIT 1;')
+    last_row = cursor.fetchone()
+    last_datetime = str(last_row[0])
 
-def get_data(SYMBOL, EXCHANGE):
-    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=Interval.in_4_hour, n_bars=500)
+    last_datetime = datetime.strptime(last_datetime, "%Y-%m-%d %H:%M:%S")
+    current_datetime = datetime.strptime(current_datetime, "%Y-%m-%d %H:%M:%S")
+    time_difference = current_datetime-last_datetime
+    print("Fark:", time_difference)
+
+    interval_minutes = interval_mapping["4h"]
+    missing_bar_count = time_difference.total_seconds() / (interval_minutes * 60)
+
+    return missing_bar_count
+
+def get_data(SYMBOL, EXCHANGE, INTERVAL):
+    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=interval_dict.get(INTERVAL), n_bars=500)
     return add_indicators(data)
 
 
@@ -737,7 +775,7 @@ def create_table(table_name, cursor: sqlite3.Cursor):
     """
     cursor.execute(query)
 
-def saveToDatabase(symbol_dict: dict, names_dict:dict):
+def saveToDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
     
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -749,7 +787,7 @@ def saveToDatabase(symbol_dict: dict, names_dict:dict):
     for symbol, exchange in symbol_dict.items():
         try:
             
-            data = get_data(symbol, exchange)
+            data = get_data(symbol, exchange, INTERVAL)
 
             data = data.astype({
                 'datetime': 'str',
@@ -809,14 +847,10 @@ def saveToDatabase(symbol_dict: dict, names_dict:dict):
 
             if data is not None:  
                 data['symbol'] = symbol
-                name = names_dict.get(symbol)
+                name = (f"{names_dict.get(symbol)}on{INTERVAL}")
 
                 create_table(name, cursor)
-
-                 
-  
-                
-                
+               
                 data = data.replace({np.nan: None})
 
                 for _, row in data.iterrows():
@@ -844,7 +878,103 @@ def saveToDatabase(symbol_dict: dict, names_dict:dict):
 
     conn.close()
 
-def updateDatabase(symbol_dict: dict, names_dict:dict):
+def updateDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
+    cursor = conn.cursor()
+    
+
+    for symbol, exchange in symbol_dict.items():
+        try:
+            name = names_dict.get(symbol)
+            bar_count = int(calculate_bar_count_for_paper(name, INTERVAL))         
+            data = update(symbol, exchange, INTERVAL, bar_count)
+            if data is not None:  
+                data['symbol'] = symbol
+                
+
+
+                data = data.astype({
+                'datetime': 'str',
+                'open': 'float',
+                'high': 'float',
+                'low': 'float',
+                'close': 'float',
+                'volume': 'float',
+                'rsi_14': 'float',
+                'macd': 'float',
+                'macd_signal': 'float',
+                'stoch_k': 'float',
+                'stoch_d': 'float',
+                'cmf': 'float',
+                'cci': 'float',
+                'mfi': 'float',
+                'obv': 'float',
+                'dmi_positive': 'float',
+                'dmi_negative': 'float',
+                'adx': 'float',
+                'v_macd': 'float',
+                'v_macd_signal': 'float',
+                # Divergence sütunları
+                'Bearish_RSI_Divergence': 'bool',
+                'Bear_Divergence_CMF': 'bool',
+                'Bear_Divergence_MACD': 'bool',
+                'Bear_Divergence_CCI': 'bool',
+                'Bear_Divergence_MFI': 'bool',
+                'Bear_Divergence_OBV': 'bool',
+                'Bear_DIOSC_Divergence': 'bool',
+                'Bear_VMACD_Divergence': 'bool',
+                'Bull_Divergence': 'bool',
+                'Bull_CMF_Divergence': 'bool',
+                'Bull_MACD_Divergence': 'bool',
+                'Bull_CCI_Divergence': 'bool',
+                'Bull_MFI_Divergence': 'bool',
+                'Bull_OBV_Divergence': 'bool',
+                'Bull_DIOSC_Divergence': 'bool',
+                'Bull_VMACD_Divergence': 'bool',
+                'Hidden_Bear_RSI_Divergence': 'bool',
+                'Hidden_Bear_MFI_Divergence': 'bool',
+                'Hidden_Bear_MACD_Divergence': 'bool',
+                'Hidden_Bear_CCI_Divergence': 'bool',
+                'Hidden_Bear_OBV_Divergence': 'bool',
+                'Hidden_Bear_VMACD_Divergence': 'bool',
+                'Hidden_Bull_RSI_Divergence': 'bool',
+                'Hidden_Bull_MFI_Divergence': 'bool',
+                'Hidden_Bull_MACD_Divergence': 'bool',
+                'Hidden_Bull_CCI_Divergence': 'bool',
+                'Hidden_Bull_OBV_Divergence': 'bool',
+                'Hidden_Bull_VMACD_Divergence': 'bool',
+                'Bearish_Total': 'int',
+                'Bull_Total': 'int',
+                'Hidden_Bear_Total': 'int',
+                'Hidden_Bull_Total': 'int',
+            })
+
+                           
+                for _, row in data.iterrows():
+                    row_data = tuple(row[col] for col in data.columns)
+                    try:
+                        cursor.execute(f"""
+                            INSERT INTO {name}on{INTERVAL} ({", ".join(data.columns)})
+                            VALUES ({", ".join(["?"] * len(data.columns))})
+                        """, row_data)
+                        conn.commit() 
+                    except Exception as e:
+                        print(f"Veri eklenirken hata oluştu: {e}")
+
+                    
+                    conn.commit()
+                    print("Yeni veri eklendi.")
+                
+
+
+                 
+            else:
+                print(f"Symbol {symbol} için veri alınamadı.")
+        except Exception as e:
+            print(f"Veri alınırken hata oluştu: {e}")
+
+    conn.close()
+
+def new_updateDatabase(symbol_dict: dict, names_dict:dict):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, "papers.sqlite3")
     conn = sqlite3.connect(db_path)
@@ -949,5 +1079,4 @@ def updateDatabase(symbol_dict: dict, names_dict:dict):
             print(f"Veri alınırken hata oluştu: {e}")
 
     conn.close()
-
 

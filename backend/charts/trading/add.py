@@ -35,7 +35,7 @@ def fetch_top_100_coins():
 coins_dict, symbol_name_dict = fetch_top_100_coins()
 
 def insert_coins_into_db():    
-    trading.saveToDatabase(coins_dict, symbol_name_dict)
+    trading.updateDatabase(coins_dict, symbol_name_dict, '5m')
     
 
 
