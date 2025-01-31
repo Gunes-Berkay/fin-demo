@@ -95,7 +95,7 @@ DATABASES = {
     
 }
 
-DATABASE_ROUTERS = ['path.to.db_router.PapersDBRouter']
+DATABASE_ROUTERS = ['backend.db_router.PapersDBRouter']
 
 
 
