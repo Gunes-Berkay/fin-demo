@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AddPaperToPortfolioView, createPortfolio, portfolioListView, paperListView, get_papers
+from .views import AddPaperToPortfolioView, createPortfolio, portfolioListView, get_papers
 
 urlpatterns = [
     path('api/add-paper/', AddPaperToPortfolioView.as_view(), name='add-paper'),

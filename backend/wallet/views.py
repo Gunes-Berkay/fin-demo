@@ -1,12 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Paper, Portfolio, PortfolioPaper
+from .models import Paper, Portfolio, PortfolioPaper, Transactions
 from .serializers import PortfolioPaperSerializer, PortfolioSerializer, PaperSerializer, TransactionsSerializer
 from .models import Portfolio
 from django.db import transaction
 from django.db import connections
 from django.http import JsonResponse
+import requests
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 class AddPaperToPortfolioView(APIView):
     def post(self, request):
@@ -65,8 +70,6 @@ class createPortfolio(APIView):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-
     
 class portfolioListView(APIView):
     def get(self, request):
@@ -80,31 +83,53 @@ class PaperListView(APIView):
         serializer = PaperSerializer(papers, many=True)
         return Response(serializer.data)
 
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from .models import Transactions, Portfolio, Paper
-
 class TransactionCreateView(APIView):
     def post(self, request):
-        serializer = TransactionsSerializer(data=request.data)
-        if serializer.is_valid():
-            portfolio_id = serializer.validated_data['portfolio'].portfolio_id
-            paper_id = serializer.validated_data['paper'].id
-            entry_price = serializer.validated_data['entry_price']
-            quantity = serializer.validated_data['quantity']
-            buy = serializer.validated_data['buy']
-            
-            # Burada yeni transaction ekliyoruz
-            transaction = Transactions.objects.create(
-                portfolio_id=portfolio_id,
-                paper_id=paper_id,
-                entry_price=entry_price,
-                quantity=quantity,
-                buy=buy
-            )
-            return Response(TransactionsSerializer(transaction).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        paper_name = request.data.get('name')  
+        try:
+            paper = Paper.objects.using('papers_db').get(name=paper_name)  
+        except Paper.DoesNotExist:
+            return Response({"error": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        portfolio_name = request.data.get('portfolio')
+        entry_price = request.data.get('entry_price')
+        quantity = request.data.get('quantity')
+        buy = request.data.get('buy')
+
+        # Portfolio'yu buluyoruz
+        try:
+            portfolio = Portfolio.objects.get(name=portfolio_name)
+        except Portfolio.DoesNotExist:
+            return Response({"error": "Portfolio not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Yeni Transaction kaydını oluşturuyoruz
+        transaction = Transactions.objects.create(
+            portfolio=portfolio,
+            paper=paper,
+            entry_price=entry_price,
+            quantity=quantity,
+            buy=buy
+        )
+        
+        # Transaction oluşturulduktan sonra dönen sonucu geri gönderiyoruz
+        return Response(TransactionsSerializer(transaction).data, status=status.HTTP_201_CREATED)
+
+class TransactionListView(APIView):
+    def get(self, request):
+        paper_name = request.query_params.get('paper_name')  
+        portfolio_name = request.query_params.get('portfolio_name')
+
+        
+        paper = get_object_or_404(Paper, name=paper_name)
+        portfolio = get_object_or_404(Portfolio, name=portfolio_name)
+
+        
+        portfolio_paper = get_object_or_404(PortfolioPaper, portfolio=portfolio, paper=paper)
+
+        transactions = portfolio_paper.transactions.all()
+
+        serializer = TransactionsSerializer(transactions, many=True)
+        return Response(serializer.data)
 
 class UpdatePortfolioPaper(APIView):
     def put(self, request, portfolio_paper_id):
@@ -117,11 +142,6 @@ class UpdatePortfolioPaper(APIView):
             return Response(serializer.errors, status=400)
         except PortfolioPaper.DoesNotExist:
             return Response({"error": "PortfolioPaper not found"}, status=404)
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import Paper
-import requests
 
 class UpdatePaperPrices(APIView):
     def get(self, request):
@@ -143,6 +163,15 @@ class UpdatePaperPrices(APIView):
                 continue  # Paper bulunamadıysa geçiyoruz
 
         return Response({"message": "Prices updated successfully"})
+
+class PortfolioPaperListView(APIView):
+    def get(self,request):
+        portfolio_name = request.query_params.get('portfolio_name')
+        portfolio = get_object_or_404(Portfolio, name=portfolio_name)
+        portfolio_papers = portfolio.papers.all()
+        serializer = PortfolioPaperSerializer(portfolio_papers, many=True)
+        return Response(serializer.data)
+
 
 def get_papers(request):
     with connections['papers_db'].cursor() as cursor:

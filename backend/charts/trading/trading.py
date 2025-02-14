@@ -7,7 +7,7 @@ from tradingview_ta import TA_Handler,Exchange
 from tradingview_ta import Interval as tvtaInterval
 import sqlite3, os
 import numpy as np
-from add import coins_dict, symbol_name_dict
+from add import coins_dict
 from datetime import datetime, timedelta
 
 
@@ -775,7 +775,7 @@ def create_table(table_name, cursor: sqlite3.Cursor):
     """
     cursor.execute(query)
 
-def saveToDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
+def saveToDatabase(symbol_dict: dict, INTERVAL):
     
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -847,7 +847,7 @@ def saveToDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
 
             if data is not None:  
                 data['symbol'] = symbol
-                name = (f"{names_dict.get(symbol)}on{INTERVAL}")
+                name = (f"{symbol}on{INTERVAL}")
 
                 create_table(name, cursor)
                
@@ -878,13 +878,13 @@ def saveToDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
 
     conn.close()
 
-def updateDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
+def updateDatabase(symbol_dict: dict, INTERVAL):
     cursor = conn.cursor()
     
 
     for symbol, exchange in symbol_dict.items():
         try:
-            name = names_dict.get(symbol)
+            name = symbol
             bar_count = int(calculate_bar_count_for_paper(name, INTERVAL))         
             data = update(symbol, exchange, INTERVAL, bar_count)
             if data is not None:  
@@ -974,7 +974,7 @@ def updateDatabase(symbol_dict: dict, names_dict:dict, INTERVAL):
 
     conn.close()
 
-def new_updateDatabase(symbol_dict: dict, names_dict:dict):
+def new_updateDatabase(symbol_dict: dict):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, "papers.sqlite3")
     conn = sqlite3.connect(db_path)
@@ -986,7 +986,7 @@ def new_updateDatabase(symbol_dict: dict, names_dict:dict):
             data = update(symbol, exchange)
             if data is not None:  
                 data['symbol'] = symbol
-                name = names_dict.get(symbol)
+                name = symbol
 
 
                 data = data.astype({

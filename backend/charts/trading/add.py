@@ -20,7 +20,7 @@ def fetch_top_100_coins():
     }
     params = {
         "start": "1",
-        "limit": "5",
+        "limit": "20",
         "convert": "USD",
     }
     response = requests.get(API_URL, headers=headers, params=params)
@@ -28,20 +28,17 @@ def fetch_top_100_coins():
 
     
     coins_dict = {coin['symbol']+'USDT': "BINANCE" for coin in data['data']}
-    symbol_name_dict = {coin['symbol']+'USDT':coin['name'] for coin in data['data']}
+    
 
-    return coins_dict, symbol_name_dict
-
-coins_dict, symbol_name_dict = fetch_top_100_coins()
+    return coins_dict
+coins_dict = fetch_top_100_coins()
 
 def insert_coins_into_db():    
-    trading.updateDatabase(coins_dict, symbol_name_dict, '5m')
+    trading.updateDatabase(coins_dict, '4h')
     
 
 
 if __name__ == "__main__":
-    print()
+    print(coins_dict)
     insert_coins_into_db()
 
-# Bağlantıyı kapat
-# conn.close()

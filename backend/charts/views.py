@@ -6,49 +6,74 @@ import sqlite3
 import requests
 import os
 import trading
+import json
+
+INTERVALS = ['15m', '1h', '4h', '1d']
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(BASE_DIR, "veri.json") 
 
 
-API_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
-API_KEY = "e58be2f2-404d-4d5a-893a-cb486e74024d"
+def fetch_table_data(request, table_name, INTERVAL):
+     data = get_table_data(table_name, INTERVAL, limit=100)
+     return JsonResponse({'table_data': data}, json_dumps_params={'ensure_ascii': False})
 
-def fetch_table_data(request, table_name):
-    data = get_table_data(table_name, limit=50)  # Fetch 50 rows
-    return JsonResponse({'table_data': data})
+def get_table_data(table_name, INTERVAL, limit=100):
 
-
-def get_table_data(table_name, limit=100):
-    """
-    Fetches data from a specified table in the `papers_db` database.
-
-    Args:
-        table_name (str): The name of the table to query.
-        limit (int): The number of rows to return (default is 10).
-
-    Returns:
-        list: A list of rows from the table.
-    """
-    try:
-        with connections['papers_db'].cursor() as cursor:
-            query = f"SELECT * FROM {table_name} LIMIT {limit}"
-            cursor.execute(query)
-            rows = cursor.fetchall()
-        return rows
-    except Exception as e:
-        print(f"Error querying table {table_name}: {e}")
+    if not table_name.isalnum() or not INTERVAL.isalnum():
         return []
 
-def fetch_coins_names(request):
-    headers = {
-        "Accepts": "application/json",
-        "X-CMC_PRO_API_KEY": API_KEY,
-    }
-    params = {
-        "start": "10",
-        "limit": "50",
-        "convert": "USD",
-    }
-    response = requests.get(API_URL, headers=headers, params=params)
-    data = response.json()
-    coins_dict = {coin['symbol']+'USDT': "BINANCE" for coin in data['data']}
+    try:
+        with connections['papers_db'].cursor() as cursor:
+            query = f"SELECT * FROM `{table_name}on{INTERVAL}` LIMIT %s"
+            cursor.execute(query, [limit])
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
 
-    return coins_dict
+        # JSON uyumlu hale getirme
+        result = [
+            {col: (str(value) if isinstance(value, (bytes, memoryview)) else value) for col, value in zip(columns, row)}
+            for row in rows
+        ]
+        return result
+
+    except Exception as e:
+        print(f"Error querying table {table_name}{INTERVAL}: {e}")
+        return []
+
+
+
+def fetch_coins_names(request):
+    with open(db_path, 'r', encoding="utf-8") as json_file:
+        data = json.load(json_file)
+
+    data = data['data']
+    
+    return JsonResponse(data, safe=False, json_dumps_params={'ensure_ascii': False})
+
+
+def get_analysis(request, symbol):
+
+    for interval in INTERVALS:
+        try:
+            with connections['papers_db'].cursor() as cursor:
+                query = f"SELECT * FROM `{symbol}on{interval}` LIMIT 1"
+                cursor.execute(query)
+                row = cursor.fetchone()
+                column_dict = {desc[0]: index for index, desc in enumerate(cursor.description)}
+                rsi = row[column_dict.get('rsi_14')]
+                volume = row[column_dict.get('volume')]
+                bull_total = row[column_dict.get('bull_total')]
+
+                
+
+            
+
+        except Exception as e:
+            print(f"Error querying table {symbol}{interval}: {e}")
+            return []
+    
+
+
+
+
+    
