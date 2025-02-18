@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
     'wallet',
+    'charts',
     'corsheaders'
 ]
 
@@ -91,6 +92,10 @@ DATABASES = {
     'papers_db': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'charts' / 'trading' / 'papers.sqlite3',  # Papers database
+    },
+    'user_db': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'databases' / 'userdb.sqlite3',  # Database for user datas
     },
     
 }

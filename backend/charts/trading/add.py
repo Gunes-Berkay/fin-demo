@@ -19,8 +19,8 @@ def fetch_top_100_coins():
         "X-CMC_PRO_API_KEY": API_KEY,
     }
     params = {
-        "start": "1",
-        "limit": "20",
+        "start": "40",
+        "limit": "10",
         "convert": "USD",
     }
     response = requests.get(API_URL, headers=headers, params=params)
@@ -34,7 +34,7 @@ def fetch_top_100_coins():
 coins_dict = fetch_top_100_coins()
 
 def insert_coins_into_db():    
-    trading.updateDatabase(coins_dict, '4h')
+    trading.saveToDatabase(coins_dict, '4h')
     
 
 

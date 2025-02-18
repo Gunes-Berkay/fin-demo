@@ -58,7 +58,7 @@ def calculate_bar_count_for_paper(PAPER_NAME , INTERVAL):
     return missing_bar_count
 
 def get_data(SYMBOL, EXCHANGE, INTERVAL):
-    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=interval_dict.get(INTERVAL), n_bars=500)
+    data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=interval_dict.get(INTERVAL), n_bars=3000)
     return add_indicators(data)
 
 
@@ -696,22 +696,12 @@ def add_divergences(data):
     data['Hidden_Bear_Total'] = data[hidden_bear_columns].sum(axis=1)
     data['Hidden_Bull_Total'] = data[hidden_bull_columns].sum(axis=1)
 
-    return data
+    return add_indicator_classification(data)
 
-def get_price_recommend(SYMBOL, EXCHANGE):
-
-    btc_analysis = TA_Handler(
-        symbol=SYMBOL,           # İlgili parite
-        exchange=EXCHANGE,         # Kullanılan borsa
-        screener="crypto",          # Screener (crypto seçilir)
-        interval=tvtaInterval.INTERVAL_4_HOURS, # 1 günlük zaman dilimi
-        timeout=None
-    )
-
-    analysis = btc_analysis.get_analysis()
-    print("RSI:", analysis.summary)
-    print(analysis.indicators['close'])
-    print(type(analysis))
+def add_indicator_classification(data):
+    def rsi_classification(data):
+        rsi_value = data['rsi_14']
+        
 
 def create_table(table_name, cursor: sqlite3.Cursor):
    

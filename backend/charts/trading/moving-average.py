@@ -7,7 +7,7 @@ db_path = os.path.join(BASE_DIR, "papers.sqlite3")
 
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
-coin_symbol = 'ETHUSDT'
+coin_symbol = 'FETUSDT'
 interval = '4h'
 table_name = (f"{coin_symbol}on{interval}")
 cursor.execute(f"SELECT datetime, close FROM {table_name} ORDER BY datetime")
@@ -19,7 +19,7 @@ X = np.arange(len(dates))
 Y = np.array(prices)
 
 
-def optimized_std_devs(Y, window=14, alpha=0.84):
+def optimized_std_devs(Y, window=14, alpha=0.75):
     """
     Zamanla daha yakın verilere ağırlık vererek optimize edilmiş standart sapma hesaplama.
     - window: standart sapmanın hesaplanacağı pencere boyutu

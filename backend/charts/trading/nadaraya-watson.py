@@ -25,12 +25,11 @@ def rational_quadratic_kernel(x, y, h, alpha):
 # ATR Hesaplama
 def compute_atr(high, low, close, length=60):
     tr = np.maximum(high - low, np.maximum(abs(high - np.roll(close, 1)), abs(low - np.roll(close, 1))))
-    tr[0] = np.nan  # İlk değer NaN olacak
+    tr[0] = np.nan  
     atr = pd.Series(tr).rolling(window=length, min_periods=1).mean().to_numpy()
     return atr
 
-# Üst ve Alt Bantları Hesaplama
-def compute_bounds(yhat, atr, near_factor=1.5, far_factor=6.0, top_factor=9.5):
+def compute_bounds(yhat, atr, near_factor=2, far_factor=6.285, top_factor=10.5):
     upper_near = yhat + near_factor * atr
     upper_far = yhat + far_factor * atr
     upper_top = yhat + top_factor *atr 
@@ -39,15 +38,12 @@ def compute_bounds(yhat, atr, near_factor=1.5, far_factor=6.0, top_factor=9.5):
     lower_top = yhat - top_factor *atr 
     return upper_near, upper_far, upper_top, lower_near, lower_far, lower_top
 
-# 📌 **Ana İşlem**
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, "papers.sqlite3")
 
-# Veriyi çek
-df = fetch_data(db_path, "BTCUSDTon4h")
+df = fetch_data(db_path, "ETHUSDTon4h")
 
-# Nadaraya-Watson tahmini uygula
-h, alpha = 8, 8  # Kernel parametreleri
+h, alpha = 8, 8  
 df["yhat"] = rational_quadratic_kernel(np.arange(len(df)), df["close"].values, h, alpha)
 
 # ATR Hesapla
