@@ -1,79 +1,114 @@
 // TradingViewWidget.jsx
+import axios from 'axios';
 import React, { useEffect, useRef, memo, useState } from 'react';
 
 
 function TradingViewWidget() {
-  const container = useRef();
-  let isScriptAdded = useRef(false);
-  const exchanges = ["BINANCE", "OKX", "BIST"];
-  const [watchList, setWatchList] = useState([]);
+  const [currentPaperSymbol, setCurrentPaperSymbol] = useState('');
+  const [showSetPaperName, setShowSetPaperName] = useState(false);
+  const [paperNameQuery, setPaperNameQuery] = useState('');
+  const [filteredPapers, setFilteredPapers] = useState('');
+  const [interval, setInterval] = useState('4h');
+  const [paperData, setPaperData] = useState({});
+  const toggleShowPaperName = () => {setShowSetPaperName(!showSetPaperName)}
+  const [paperNamesList, setPaperNamesList] = useState([]);
+  const [paperSymbolList, setPaperSymbolList] = useState([]);
+  const [papersData, setPapersData] = useState({})
+  const container = useRef()
 
 
-  const coins = [
-    "BINANCE:BTCUSDT", "BINANCE:ETHUSDT", "BINANCE:XRPUSDT", "BINANCE:SOLUSDT", "BINANCE:BNBUSDT", "BINANCE:DOGEUSDT", 
-    "BINANCE:ADAUSDT", "BINANCE:TRXUSDT", "BINANCE:LINKUSDT", "BINANCE:AVAXUSDT", "BINANCE:XLMUSDT", "BINANCE:TONUSDT", 
-    "BINANCE:HBARUSDT", "BINANCE:SUIUSDT", "BINANCE:SHIBUSDT", "BINANCE:DOTUSDT", "BINANCE:LEOUSDT", "BINANCE:LTCUSDT", 
-    "BINANCE:BGBUSDT", "BINANCE:BCHUSDT", "BINANCE:HYPEUSDT", "BINANCE:UNIUSDT", "BINANCE:USDeUSDT", "BINANCE:TRUMPUSDT", 
-    "BINANCE:DAIUSDT", "BINANCE:PEPEUSDT", "BINANCE:NEARUSDT", "BINANCE:AAVEUSDT", "BINANCE:ONDOUSDT", "BINANCE:OMUSDT", 
-    "BINANCE:APTUSDT", "BINANCE:ICPUSDT", "BINANCE:XMRUSDT", "BINANCE:TAOUSDT", "BINANCE:ETCUSDT", "BINANCE:MNTUSDT", 
-    "BINANCE:VETUSDT", "BINANCE:CROUSDT", "BINANCE:POLUSDT", "BINANCE:OKBUSDT", "BINANCE:KASUSDT", "BINANCE:ALGOUSDT", 
-    "BINANCE:RENDERUSDT", "BINANCE:FILUSDT", "BINANCE:ARBUSDT", "BINANCE:FETUSDT", "BINANCE:ATOMUSDT", "BINANCE:GTUSDT"
-  ];
+  const handlePaperSelect = (paperSymbol) => {
+    setCurrentPaperSymbol(paperSymbol); 
+    setPaperNameQuery(paperSymbol); 
+    setFilteredPapers([]); 
+    
   
-  //const [watchList, setWatchList] = useState([]);
-  //const [indicators, setIndicators] = useState([]);
-
-  //const new_coin_list = coin_list.map((coin)=>)
-    const coin = "BINANCE:XAIUSDT";
-
- 
+    fetch(`http://127.0.0.1:8000/charts/table/${paperSymbol}USDTon${interval}/`)
+      .then(response => response.json())
+      .then(data => setPaperData(data))
+      .catch(error => console.error("Error fetching paper data:", error));
+  };
   
 
+  const handlePaperNameChanger = (e) => {
+    const value = e.target.value;
+    setPaperNameQuery(value);
 
+    if (value) {
+      const filtered = papersData.filter((paper) => 
+          paper.symbol.toLowerCase().includes(value.toLowerCase()) || 
+          paper.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredPapers(filtered);
+    } else {
+      setFilteredPapers([]);
+    }
 
-    useEffect(
-      () => {
-        const script = document.createElement("script");
-        script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-        script.type = "text/javascript";
-        script.async = true;
-        script.innerHTML = JSON.stringify({
-          width: "1980",
-          height: "810",
-          symbol: "BINANCE:BTCUSDT",
-          interval: "240",
-          timezone: "Europe/Istanbul",
-          theme: "dark",
-          style: "1",
-          locale: "tr",
-          withdateranges: true,
-          hide_side_toolbar: false,
-          allow_symbol_change: true,
-          watchlist: coins,
-          details: true,
-          hotlist: true,
-          calendar: false,
-          studies: [
-            "STD;24h%Volume",
-            "STD;2030"
-          ],
-          support_host: "https://www.tradingview.com"
-        });
-        
-        container.current.appendChild(script);
-      },
-      []
-    );
+    
+  }
+
+  const getPaperData = (paperName) => {
+      fetch(`http://127.0.0.1:8000/charts/table/${currentPaperSymbol}on${interval}`)
+      .then((data) => setPapersData(data))
+  }
+
+  useEffect(() => {  // ✅ Now useEffect gets a function as an argument
+    fetch('http://127.0.0.1:8000/charts/')
+      .then((response) => response.json())
+      .then((data) => setPapersData(data))
+      .catch((error) => console.error("Error fetching data:", error));
+  }, []);
+  
 
   return (
-    <div className="tradingview-widget-container" ref={container} >
-      <div>
-        <button id='add_to_watchlist'></button>
-      </div>
-      <div className="tradingview-widget-container__widget" ></div>
-      
+    <div>
+      <button onClick={() => setShowSetPaperName(!showSetPaperName)}>data getir</button>
+      {showSetPaperName && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Coin seç</h5>
+                <button type="button" className="btn-close" onClick={toggleShowPaperName}></button>
+              </div>
+              <div className="modal-body">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Paper Ara"
+                  value={paperNameQuery}
+                  onChange={handlePaperNameChanger}
+                />
+
+                {filteredPapers.length > 0 && (
+                  <ul className="list-group mt-2">
+                    {filteredPapers.map((paper) => (
+                      <li
+                        key={paper.paper_id}
+                        className="list-group-item"
+                        onClick={() => {handlePaperSelect(paper.symbol);
+                          console.log(paper.name)
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <span>{paper.name}({paper.symbol})</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={toggleShowPaperName}>İptal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <p>{JSON.stringify(paperData, null, 2)}</p>
     </div>
-  );
+  )
+
 }
 
-export default memo(TradingViewWidget);
+export default TradingViewWidget

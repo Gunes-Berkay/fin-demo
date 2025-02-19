@@ -46,15 +46,15 @@ const Wallet = () => {
     const value = e.target.value;
     setSearchQuery(value);
 
-    if (value){
+    if (value) {
       const filtered = papers.filter((paper) => 
-        paper.name.toLowerCase().includes(value.toLowerCase())
+          paper.symbol.toLowerCase().includes(value.toLowerCase()) || 
+          paper.name.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredPapers(filtered);
-    }
-    else {
+  } else {
       setFilteredPapers([]);
-    }
+  }
   }
 
   const handlePaperSelect = (paperName) => {
@@ -165,7 +165,10 @@ const Wallet = () => {
               {currentPortfolio.papers_list && currentPortfolio.papers_list.length > 0 ? (
                 <ul>
                   {currentPortfolio.papers_list.map((paper, idx) => (
-                    <li key={idx}>{paper.name} (İsim: {paper.name})</li>
+                    <li key={idx}>
+                    {paper.name} (İsim: {paper.name})
+                      {/* Burada buton olacak, butona basılınca ilgili fonksiyon yeni bir sayfa açıcak, açtığı sayfa ilgili paper'ın transaction'larını gösterecek */}
+                    </li>
                   ))}
                 </ul>
               ) : (
@@ -238,7 +241,7 @@ const Wallet = () => {
                         onClick={() => handlePaperSelect(paper.name)}
                         style={{ cursor: 'pointer' }}
                       >
-                        {paper.name}
+                        <span>{paper.name}({paper.symbol})</span>
                       </li>
                     ))}
                   </ul>

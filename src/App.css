@@ -1,5 +1,9 @@
 .App {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Sayfa boyutuna uyumlu olacak şekilde */
+  overflow: hidden;
 }
 
 .App-logo {
@@ -26,6 +30,10 @@
 
 .App-link {
   color: #61dafb;
+}
+
+.main-content {
+  flex-grow: 1; /* Ana içeriğin kalan alanı doldurmasını sağlar */
 }
 
 @keyframes App-logo-spin {
