@@ -19,7 +19,7 @@ def fetch_top_100_coins():
         "X-CMC_PRO_API_KEY": API_KEY,
     }
     params = {
-        "start": "40",
+        "start": "100",
         "limit": "10",
         "convert": "USD",
     }
@@ -41,4 +41,3 @@ def insert_coins_into_db():
 if __name__ == "__main__":
     print(coins_dict)
     insert_coins_into_db()
-

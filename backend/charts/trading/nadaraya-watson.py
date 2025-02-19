@@ -29,7 +29,7 @@ def compute_atr(high, low, close, length=60):
     atr = pd.Series(tr).rolling(window=length, min_periods=1).mean().to_numpy()
     return atr
 
-def compute_bounds(yhat, atr, near_factor=2, far_factor=6.285, top_factor=10.5):
+def compute_bounds(yhat, atr, near_factor=1.85, far_factor=5.9, top_factor=10):
     upper_near = yhat + near_factor * atr
     upper_far = yhat + far_factor * atr
     upper_top = yhat + top_factor *atr 
@@ -53,4 +53,4 @@ df["atr"] = compute_atr(df["high"].values, df["low"].values, df["close"].values)
 df["upper_near"], df["upper_far"], df["upper_top"], df["lower_near"], df["lower_far"], df["lower_top"] = compute_bounds(df["yhat"], df["atr"])
 
 # Sonuçları göster
-print(df[["upper_near", "upper_far","upper_top", "lower_near", "lower_far", "lower_top"]].dropna())
+print(df[["upper_near", "upper_far","upper_top", "lower_near", "lower_far", "lower_top", "yhat"]].dropna())

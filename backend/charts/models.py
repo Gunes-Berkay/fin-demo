@@ -4,7 +4,7 @@ import json
 class Coin(models.Model):
     cmc_rank = models.IntegerField(primary_key=True)
     coin_id = models.IntegerField(db_column="id")  
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=100)
     symbol = models.CharField(max_length=50)
     price = models.FloatField()
     market_cap = models.FloatField()
@@ -32,3 +32,11 @@ class Coin(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.symbol})"
+    
+class Watchlist(models.Model):
+    name = models.CharField(max_length=20)
+    
+class WatchlistCoin(models.Model):
+    watchlist = models.ForeignKey(Watchlist, related_name='coins', on_delete=models.CASCADE)  # Hangi watchlist'e ait
+    coin = models.ForeignKey(Coin, on_delete=models.CASCADE)
+    

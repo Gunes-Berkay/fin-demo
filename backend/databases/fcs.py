@@ -80,7 +80,7 @@ def fetch_top_100_coins():
     }
     params = {
         "start": "1",
-        "limit": "200",
+        "limit": "500",
         "convert": "USD",
     }
     response = requests.get(API_URL, headers=headers, params=params)

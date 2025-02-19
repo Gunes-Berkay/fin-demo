@@ -33,6 +33,35 @@ interval_mapping = {
     "1d": 1440
 }
 
+
+def rational_quadratic_kernel(x, y, h, alpha):
+    n = len(x)
+    y_hat = np.zeros(n)
+
+    for i in range(n):
+        weights = (1 + ((x[i] - x) ** 2) / (alpha * h ** 2)) ** (-alpha)
+        weights /= np.sum(weights)
+        y_hat[i] = np.sum(weights * y)
+
+    return y_hat
+
+# ATR Hesaplama
+def compute_atr(high, low, close, length=60):
+    tr = np.maximum(high - low, np.maximum(abs(high - np.roll(close, 1)), abs(low - np.roll(close, 1))))
+    tr[0] = np.nan  
+    atr = pd.Series(tr).rolling(window=length, min_periods=1).mean().to_numpy()
+    return atr
+
+def compute_bounds(yhat, atr, near_factor=1.85, far_factor=5.9, top_factor=10):
+    upper_near = yhat + near_factor * atr
+    upper_far = yhat + far_factor * atr
+    upper_top = yhat + top_factor *atr 
+    lower_near = yhat - near_factor * atr
+    lower_far = yhat - far_factor * atr
+    lower_top = yhat - top_factor *atr 
+    return upper_near, upper_far, upper_top, lower_near, lower_far, lower_top
+
+
 def update(SYMBOL, EXCHANGE, INTERVAL, BAR_COUNT):
     data = tv.get_hist(symbol=SYMBOL, exchange=EXCHANGE, interval=interval_dict.get(INTERVAL), n_bars=BAR_COUNT+28)
     data = add_indicators(data)
@@ -696,12 +725,22 @@ def add_divergences(data):
     data['Hidden_Bear_Total'] = data[hidden_bear_columns].sum(axis=1)
     data['Hidden_Bull_Total'] = data[hidden_bull_columns].sum(axis=1)
 
-    return add_indicator_classification(data)
+    return add_nadaraya_watson(data)
 
-def add_indicator_classification(data):
-    def rsi_classification(data):
-        rsi_value = data['rsi_14']
-        
+# def add_indicator_classification(data):
+#     def rsi_classification(data):
+#         rsi_value = data['rsi_14']
+
+def add_nadaraya_watson(df):    
+    h, alpha = 8, 8  
+    df["yhat"] = rational_quadratic_kernel(np.arange(len(df)), df["close"].values, h, alpha)
+
+    df["atr"] = compute_atr(df["high"].values, df["low"].values, df["close"].values)
+
+    df["upper_near"], df["upper_far"], df["upper_top"], df["lower_near"], df["lower_far"], df["lower_top"] = compute_bounds(df["yhat"], df["atr"])
+
+    return df
+     
 
 def create_table(table_name, cursor: sqlite3.Cursor):
    
@@ -760,11 +799,20 @@ def create_table(table_name, cursor: sqlite3.Cursor):
             Bull_Total NUMBER,
             Hidden_Bear_Total NUMBER,
             Hidden_Bull_Total NUMBER,
+            yhat REAL,
+            upper_near REAL,
+            upper_far REAL,
+            upper_top REAL,
+            lower_near REAL,
+            lower_far REAL,
+            lower_top REAL,
+            
             UNIQUE(datetime, symbol) ON CONFLICT IGNORE
         )
     """
     cursor.execute(query)
 
+                
 def saveToDatabase(symbol_dict: dict, INTERVAL):
     
 
@@ -778,6 +826,7 @@ def saveToDatabase(symbol_dict: dict, INTERVAL):
         try:
             
             data = get_data(symbol, exchange, INTERVAL)
+            data.drop(columns=["atr"], inplace=True)
 
             data = data.astype({
                 'datetime': 'str',
@@ -833,6 +882,15 @@ def saveToDatabase(symbol_dict: dict, INTERVAL):
                 'Bull_Total': 'int',
                 'Hidden_Bear_Total': 'int',
                 'Hidden_Bull_Total': 'int',
+                'yhat' : 'float',
+                "upper_near" : 'float',
+                "upper_far" : 'float',
+                "upper_top" : 'float',
+                "lower_near" : 'float',
+                "lower_far" : 'float',
+                "lower_top" : 'float',
+                
+                
             })
 
             if data is not None:  
@@ -847,8 +905,7 @@ def saveToDatabase(symbol_dict: dict, INTERVAL):
                     print(row)
                     print(row.dtypes)
 
-
-                
+             
                 for _, row in data.iterrows():
                     row_data = tuple(row[col] for col in data.columns)
                     try:
@@ -1069,4 +1126,3 @@ def new_updateDatabase(symbol_dict: dict):
             print(f"Veri alınırken hata oluştu: {e}")
 
     conn.close()
-
